@@ -4,26 +4,58 @@ int cycle =0;
 struct Memory{
     int rows[2048];
 };
+
 struct Registers{
     int GPR[31];
     int zero;
     int pc;
 } registers; // Declare registers as a global variable
+
 struct decodedInstruction{
     int opcode;          // Opcode specifying the operation to be performed - [31:28]
     int r1;              // Index of the first source/destination register - [27:23]
     int r2;              // Index of the second source register - [22:18]
     int r3;              // Index of the third source/destination register (for some instructions) - [17:12]
     int shamt;           // Shift amount (for shift instructions) - [12:0]
-    int immediate;       // Immediate value (for immediate arithmetic/logic operations) - [15:0]
+    int immediate;       // Immediate value (for immediate arithmetic/logic operations) - [17:0]
     int address;         // Memory address (for load/store instructions) - [27:0]
 };
+
 int fetch(){
     //acess pc, get instruction, increment pc
 }
 struct decodedInstruction decode(int instruction){
-    //read Instruction from fetch, decode it, return operation number and operand indices
+    int temp;
+    struct decodedInstruction decodedInstruction;
+
+    temp = instruction & 0b11110000000000000000000000000000;
+    temp = temp >> 28;
+    decodedInstruction.opcode = temp;
+
+    temp = instruction & 0b00001111100000000000000000000000;
+    temp = temp >> 23;
+    decodedInstruction.r1 = temp;
+
+    temp = instruction & 0b00000000011111000000000000000000;
+    temp = temp >> 18;
+    decodedInstruction.r2 = temp;
+
+    temp = instruction & 0b00000000000000111111000000000000;
+    temp = temp >> 12;
+    decodedInstruction.r3 = temp;
+
+    temp = instruction & 0b00000000000000000000111111111111;
+    decodedInstruction.shamt = temp;
+
+    temp = instruction & 0b00000000000000111111111111111111;
+    decodedInstruction.immediate = temp;
+
+    temp = instruction & 0b00001111111111111111111111111111;
+    decodedInstruction.address = temp;
+
+    return decodedInstruction;
 }
+
 void execute(struct decodedInstruction instruction){
     // Add
     if (instruction.opcode == 0) {
