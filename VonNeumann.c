@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-int cycle =0;
+int cycle = 0;
 struct Memory{
     int rows[2048];
-};
+} memory; // Declare memory as a global variable
 
 struct Registers{
     int GPR[31];
@@ -131,9 +131,11 @@ void execute(struct decodedInstruction instruction){
 }
 int memoryLoad(int rowIndex){
     //returns value in this address
+    return memory.rows[rowIndex];
 }
 void memoryStore(int rowIndex, int operand){
     //stores operand in rowIndex
+    memory.rows[rowIndex] = operand;
 }
 void writeBack(int GPRIndex, int operand){
     //write result(operand) back to GPR defined by the GPRIndex
