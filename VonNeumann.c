@@ -139,4 +139,5 @@ void memoryStore(int rowIndex, int operand){
 }
 void writeBack(int GPRIndex, int operand){
     //write result(operand) back to GPR defined by the GPRIndex
+    registers.GPR[GPRIndex]=operand;
 }
