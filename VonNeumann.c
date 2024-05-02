@@ -1,6 +1,8 @@
 #include <stdio.h>
 
 int cycle = 0;
+int NumberofInstructions = 0;
+
 struct Memory{
     int rows[2048];
 } memory; // Declare memory as a global variable
@@ -20,10 +22,19 @@ struct decodedInstruction{
     int immediate;       // Immediate value (for immediate arithmetic/logic operations) - [17:0]
     int address;         // Memory address (for load/store instructions) - [27:0]
 };
-
-int fetch(){
-    //acess pc, get instruction, increment pc
+void addToMemory(int value){
+    memory.rows[NumberofInstructions] = value;
+    NumberofInstructions++;
 }
+int fetch(){
+    int instruction = 0;
+        for(int i=0;i < NumberofInstructions ; i++){
+            instruction = memory.rows[registers.pc];
+            decode(instruction);
+            registers.pc++;
+        }
+}
+
 struct decodedInstruction decode(int instruction){
     int temp;
     struct decodedInstruction decodedInstruction;
@@ -140,4 +151,9 @@ void memoryStore(int rowIndex, int operand){
 void writeBack(int GPRIndex, int operand){
     //write result(operand) back to GPR defined by the GPRIndex
     registers.GPR[GPRIndex]=operand;
+}
+void main() {
+    addToMemory(10);
+    addToMemory(12);
+    fetch();
 }
