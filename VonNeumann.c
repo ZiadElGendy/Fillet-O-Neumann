@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include<string.h>
 
+
+
 int memoryLoad(int);
 
 int cycle = 0;
@@ -402,12 +404,48 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
 //parsing
     //1-import text file into a string array
-    
+    char** readFile(int programNum){
+        FILE *file;
+        char line[100];
 
-    
-    //4- add to memory
-    int instructionToBinary(){
-        char line[] = "ADD R1 R2 R3";
+        // Open the file
+        char fileName[64];
+        sprintf(fileName, "Program_%d.txt", programNum); //Concatenate the filename
+        printf("Opening file:%s\n", fileName);
+        file = fopen(fileName, "r");
+
+        if (file == NULL)
+        {
+            perror("Error opening file");
+            return NULL;
+        }
+
+        // Allocate memory for storing lines
+        char **lines = (char **)malloc(256 * sizeof(char *));
+        if (lines == NULL)
+        {
+            perror("Memory allocation error");
+            fclose(file);
+            return NULL;
+        }
+
+        int i = 0;
+        // Read lines until the end of the file
+        while (fgets(line, sizeof(line), file) != NULL && i < 256)
+        {
+            lines[i] = strdup(line); // Allocate memory and copy line
+            i++;
+        }
+        lines[i] = NULL;
+        // Close the file
+        fclose(file);
+
+        return lines;
+    }
+    //2-turn each string instruction to binary integer
+    int instructionToBinary(char* linePtr){
+        char line[50];
+        strcpy(line, linePtr);
         char d[] = " ";
         char s[4][10]; // Assuming maximum portion length is 10 characters
         int count = 0;
@@ -420,7 +458,7 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
             portion = strtok(NULL, d);
         }
 
-        int length = sizeof(s) / sizeof(s[0]); //remove
+        int length = sizeof(s) / sizeof(s[0]); 
 
         int instruction = 0;
 
@@ -513,14 +551,22 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
         return instruction;
         
     }
-
-
+    //3- add to memory
+    void initializeMemory(){
+        char **file = readFile(5); //change temp value
+        int length = sizeof(file) / sizeof(char*);
+        for(int i =0; i< length; i++){
+            printf("Line: %s /n" , file[i]);
+            int instruction = instructionToBinary(file[i]);
+            printf("instruction: %i /n" , instruction);
+        }
+    }
 
 
 //tesing
 void main() {
 
-    printf("instruction1:%i",instructionToBinary());
+    printf("instruction1:%i /n",instructionToBinary("ADD R1 R2 R3"));
 
     //printf("%d \n" , atoi("29"));
     
