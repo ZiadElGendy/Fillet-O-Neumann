@@ -402,7 +402,7 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
 
 
-//parsing
+//parsing: read text file of MIPS, convert to int instruction and store in memory
     //1-import text file into a string array
     char** readFile(){
         FILE *file;
@@ -553,22 +553,72 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
     }
     //3- add to memory
     void initializeMemory(){
-        char **file = readFile(5); //change temp value
-        int length = sizeof(file) / sizeof(char*);
-        for(int i =0; i< length; i++){
-            printf("Line: %s /n" , file[i]);
-            int instruction = instructionToBinary(file[i]);
-            printf("instruction: %i /n" , instruction);
+        //read file
+        char **file = readFile(); //change temp value
+        int length = 0;
+        while (file[length] != NULL) {
+            length++;
         }
+        //convert instruction to binary and store in memory
+        for(int i =0; i< length; i++){
+            //printf("Line: %s \n" , file[i]);
+            int instruction = instructionToBinary(file[i]);
+            memory.rows[i] = instruction;
+            //printf("instruction: %i \n" , memory.rows[i]);
+            //printf("instruction: %i \n" , instruction);
+        }
+
     }
 
 
 //tesing
 void main() {
-    char **temp = readFile();
-    for(int i=0 ; i <12 ;i++){
-        printf("instruction: %s\n" , temp[i]);
-    }
+
+    initializeMemory();
+    /*
+    Expected output:
+
+    Opening file:testData.txt
+    length: 12
+
+    Line: ADD R16 R16 R16
+    instruction: 138543104 00001000010000100000000000000000
+
+    Line: SUB R16 R16 R16
+    instruction: 406978560 00011000010000100000000000000000
+
+    Line: MUL R16 R16 R16
+    instruction: 675414016 00101000010000100000000000000000
+
+    Line: MOVI R17 131072
+    instruction: 948043776 00111000100000100000000000000000
+
+    Line: JEQ R16 R16 131072
+    instruction: 1212284928 01001000010000100000000000000000
+
+    Line: AND R16 R16 R16
+    instruction: 1480720384 01011000010000100000000000000000
+
+    Line: XORI R16 R16 131072
+    instruction: 1749155840 01101000010000100000000000000000
+
+    Line: JMP 134217728
+    instruction: 2013265920 01111000000000000000000000000000
+
+    Line: LSL R16 R16 4096
+    instruction: -2009067520 10001000010000000001000000000000
+
+    Line: LSR R16 R16 4096
+    instruction: -1740632064 10011000010000000001000000000000
+
+    Line: MOVR R16 R16 131072
+    instruction: -1472069632 10101000010000100000000000000000
+
+    Line: MOVM R16 R16 131072
+    instruction: -1203634176 10111000010000100000000000000000
+
+    */
+    
     
 
     //printf("%d \n" , atoi("29"));
