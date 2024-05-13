@@ -402,74 +402,58 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
 //parsing
     //1-import text file into a string array
-    //2-split each instruction into words
-    void splitInstruction(){
-        char s[] = "pls parse argook";
+    
+
+    
+    //4- add to memory
+    int instructionToBinary(){
+        char line[] = "ADD R1 R2 R3";
         char d[] = " ";
-        char *portion = strtok(s,d);
-        while(portion!= NULL){
-            printf("%s\n" , portion);
-            portion = strtok(NULL,d);
+        char s[4][10]; // Assuming maximum portion length is 10 characters
+        int count = 0;
+
+    //2-split each instruction into words
+        char *portion = strtok(line, d);
+        while (portion != NULL && count < 4) {
+            strcpy(s[count], portion);
+            count++;
+            portion = strtok(NULL, d);
         }
-    }
+
+        int length = sizeof(s) / sizeof(s[0]); //remove
+
+        int instruction = 0;
 
     //3-convert each parsed string to concatenated string of 0s and 1s
-    //4- add to memory
-    void instructionToBinary(){
-        char s[4][10] = {"MOVI","R1","9"};
-        int length = sizeof(s) / sizeof(s[0]);
-
-        char instruction[100] = "";
-        
-        char R1[6]; //dest
-        char R2[6]; //src1
-        char R3[6]; //src2
-        char opcode[5];
-        char shamt[15];
-        char immediate[19];
-        char address[29];
         //operation
         if(strcmp(s[0], "ADD") == 0){
-            strcpy(opcode, "0000");
-            printf("add \n");
+            instruction = instruction | 0b00000000000000000000000000000000;
         }else if (strcmp(s[0], "SUB") == 0) {
-            strcpy(opcode, "0001");
-            printf("sub \n");
+            instruction = instruction | 0b00010000000000000000000000000000;
         }else if (strcmp(s[0], "MUL") == 0) {
-            strcpy(opcode, "0010");
-            printf("mul \n");
+            instruction = instruction | 0b00100000000000000000000000000000;
         }else if (strcmp(s[0], "MOVI") == 0) {
-            strcpy(opcode, "0011");
-            printf("movi \n");
+            instruction = instruction | 0b00110000000000000000000000000000;
         }else if (strcmp(s[0], "JEQ") == 0) {
-            strcpy(opcode, "0100");
-            printf("jeq \n");
+           instruction = instruction | 0b01000000000000000000000000000000;
         }else if (strcmp(s[0], "AND") == 0) {
-            strcpy(opcode, "0101");
-            printf("and \n");
+            instruction = instruction | 0b01010000000000000000000000000000;
         }else if (strcmp(s[0], "XORI") == 0) {
-            strcpy(opcode,"0110");
-            printf("xori \n");
+            instruction = instruction | 0b01100000000000000000000000000000;
         }else if (strcmp(s[0], "JMP") == 0) {
-            strcpy(opcode, "0111");
-            printf("jmp \n");
+            instruction = instruction | 0b01110000000000000000000000000000;
         }else if (strcmp(s[0], "LSL") == 0) {
-            strcpy(opcode, "1000");
-            printf("lsl \n");
+            instruction = instruction | 0b10000000000000000000000000000000;
         }else if (strcmp(s[0], "LSR") == 0) {
-            strcpy(opcode, "1001");
-            printf("lsr \n");
+            instruction = instruction | 0b10010000000000000000000000000000;
         }else if (strcmp(s[0], "MOVR") == 0) {
-            strcpy(opcode, "1010");
-            printf("movr \n");
+            instruction = instruction | 0b10100000000000000000000000000000;
         }else if (strcmp(s[0], "MOVM") == 0) {
-            strcpy(opcode, "1011");
-            printf("movm \n");
+            instruction = instruction | 0b10110000000000000000000000000000;
         }
         
         //operands
         if(strcmp(s[0], "ADD") == 0 || strcmp(s[0], "SUB") == 0 || strcmp(s[0], "MUL") == 0 || strcmp(s[0], "AND") == 0 ){
-            //{"ADD","R1","R2","R3"}
             //convert from string to register numbers
             char *ptr1 = strchr(s[1], 'R');
             int number1 = atoi(ptr1 + 1);
@@ -477,61 +461,12 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
             int number2 = atoi(ptr2 + 1);
             char *ptr3 = strchr(s[3], 'R');
             int number3 = atoi(ptr3 + 1);
-            //convert from decimal1 to binary
-            int length1 = 0;
-            while(length1<5 ){
-                if(number1 % 2 == 0 || number1 == 0){R1[length1] = '0';}
-                else{R1[length1] = '1';}
-                number1= number1/2;
-                length1++;
-            }
-            R1[length1] = '\0';
-            int middle1 = length1 /2;
-            char temp1;
-            for(int i=0 ; i< middle1; i++){
-                temp1 = R1[i];
-                R1[i]= R1[length1-i-1];
-                R1[length1-i-1] = temp1;
-            }
-            //convert from decimal1 to binary
-            int length2 = 0;
-            while(length2<5 ){
-                if(number2 % 2 == 0 || number2 == 0){R2[length2] = '0';}
-                else{R2[length2] = '1';}
-                number2= number2/2;
-                length2++;
-            }
-            R2[length2] = '\0';
-            int middle2 = length2 /2;
-            char temp2;
-            for(int i=0 ; i< middle2; i++){
-                temp2 = R2[i];
-                R2[i]= R2[length2-i-1];
-                R2[length2-i-1] = temp2;
-            }
-            //convert from decimal1 to binary
-            int length3 = 0;
-            while(length3<5 ){
-                if(number3 % 2 == 0 || number3 == 0){R3[length3] = '0';}
-                else{R3[length3] = '1';}
-                number3= number3/2;
-                length3++;
-            }
-            R3[length3] = '\0';
-            int middle3 = length3 /2;
-            char temp3;
-            for(int i=0 ; i< middle3; i++){
-                temp3 = R3[i];
-                R3[i]= R3[length3-i-1];
-                R3[length3-i-1] = temp3;
-            }
-            //concatenate everything
-            strcat(instruction,opcode);
-            strcat(instruction,R1);
-            strcat(instruction,R2);
-            strcat(instruction,R3);
-            strcat(instruction,"0000000000000");
-            printf("Instruction: %s\n", instruction);
+            number1 = number1 << 23;
+            number2 = number2 << 18;
+            number3 = number3 << 13;
+            instruction = instruction | number1;
+            instruction = instruction | number2;
+            instruction = instruction | number3;
 
         }else if(strcmp(s[0], "LSL") == 0 || strcmp(s[0], "LSR") == 0){
             //convert from string to register numbers
@@ -541,60 +476,11 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
             int number2 = atoi(ptr2 + 1);
             int decimalshamt = atoi(s[3]);
             //convert from decimal1 to binary
-            int length1 = 0;
-            while(length1<5 ){
-                if(number1 % 2 == 0 || number1 == 0){R1[length1] = '0';}
-                else{R1[length1] = '1';}
-                number1= number1/2;
-                length1++;
-            }
-            R1[length1] = '\0';
-            int middle1 = length1 /2;
-            char temp1;
-            for(int i=0 ; i< middle1; i++){
-                temp1 = R1[i];
-                R1[i]= R1[length1-i-1];
-                R1[length1-i-1] = temp1;
-            }
-            //convert from decimal1 to binary
-            int length2 = 0;
-            while(length2<5 ){
-                if(number2 % 2 == 0 || number2 == 0){R2[length2] = '0';}
-                else{R2[length2] = '1';}
-                number2= number2/2;
-                length2++;
-            }
-            R2[length2] = '\0';
-            int middle2 = length2 /2;
-            char temp2;
-            for(int i=0 ; i< middle2; i++){
-                temp2 = R2[i];
-                R2[i]= R2[length2-i-1];
-                R2[length2-i-1] = temp2;
-            }
-            //convert from decimal1 to binary
-            int length3 = 0;
-            while(length3<13 ){
-                if(decimalshamt % 2 == 0 || decimalshamt == 0){shamt[length3] = '0';}
-                else{shamt[length3] = '1';}
-                decimalshamt= decimalshamt/2;
-                length3++;
-            }
-            shamt[length3] = '\0';
-            int middle3 = length3 /2;
-            char temp3;
-            for(int i=0 ; i< middle3; i++){
-                temp3 = shamt[i];
-                shamt[i]= shamt[length3-i-1];
-                shamt[length3-i-1] = temp3;
-            }
-            //concatenate everything
-            strcat(instruction,opcode);
-            strcat(instruction,R1);
-            strcat(instruction,R2);
-            strcat(instruction,"00000");
-            strcat(instruction,shamt);
-            printf("Instruction: %s\n", instruction);
+            number1 = number1 << 23;
+            number2 = number2 << 18;
+            instruction = instruction | number1;
+            instruction = instruction | number2;
+            instruction = instruction | decimalshamt;
         }else if(strcmp(s[0], "JEQ") == 0 || strcmp(s[0], "XORI") == 0 || strcmp(s[0], "MOVR") == 0 || strcmp(s[0], "MOVM") == 0){
             //convert from string to register numbers
             char *ptr1 = strchr(s[1], 'R');
@@ -603,128 +489,28 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
             int number2 = atoi(ptr2 + 1);
             int decimalimmediate = atoi(s[3]);
             //convert from decimal1 to binary
-            int length1 = 0;
-            while(length1<5 ){
-                if(number1 % 2 == 0 || number1 == 0){R1[length1] = '0';}
-                else{R1[length1] = '1';}
-                number1= number1/2;
-                length1++;
-            }
-            R1[length1] = '\0';
-            int middle1 = length1 /2;
-            char temp1;
-            for(int i=0 ; i< middle1; i++){
-                temp1 = R1[i];
-                R1[i]= R1[length1-i-1];
-                R1[length1-i-1] = temp1;
-            }
-            //convert from decimal1 to binary
-            int length2 = 0;
-            while(length2<5 ){
-                if(number2 % 2 == 0 || number2 == 0){R2[length2] = '0';}
-                else{R2[length2] = '1';}
-                number2= number2/2;
-                length2++;
-            }
-            R2[length2] = '\0';
-            int middle2 = length2 /2;
-            char temp2;
-            for(int i=0 ; i< middle2; i++){
-                temp2 = R2[i];
-                R2[i]= R2[length2-i-1];
-                R2[length2-i-1] = temp2;
-            }
-            //convert from decimal1 to binary
-            int length3 = 0;
-            while(length3<18 ){
-                if(decimalimmediate % 2 == 0 || decimalimmediate == 0){immediate[length3] = '0';}
-                else{immediate[length3] = '1';}
-                decimalimmediate= decimalimmediate/2;
-                length3++;
-            }
-            immediate[length3] = '\0';
-            int middle3 = length3 /2;
-            char temp3;
-            for(int i=0 ; i< middle3; i++){
-                temp3 = immediate[i];
-                immediate[i]= immediate[length3-i-1];
-                immediate[length3-i-1] = temp3;
-            }
-            
-            //concatenate everything
-            strcat(instruction,opcode);
-            strcat(instruction,R1);
-            strcat(instruction,R2);
-            strcat(instruction,immediate);
-            printf("Instruction: %s\n", instruction);
+            number1 = number1 << 23;
+            number2 = number2 << 18;
+            instruction = instruction | number1;
+            instruction = instruction | number2;
+            instruction = instruction | decimalimmediate;
         }else if(strcmp(s[0], "MOVI") == 0){
             //convert from string to register numbers
             char *ptr1 = strchr(s[1], 'R');
             int number1 = atoi(ptr1 + 1);
             int decimalimmediate = atoi(s[2]);
             //convert from decimal1 to binary
-            int length1 = 0;
-            while(length1<5 ){
-                if(number1 % 2 == 0 || number1 == 0){R1[length1] = '0';}
-                else{R1[length1] = '1';}
-                number1= number1/2;
-                length1++;
-            }
-            R1[length1] = '\0';
-            int middle1 = length1 /2;
-            char temp1;
-            for(int i=0 ; i< middle1; i++){
-                temp1 = R1[i];
-                R1[i]= R1[length1-i-1];
-                R1[length1-i-1] = temp1;
-            }
-            //convert from immediate to binary
-            int length3 = 0;
-            while(length3<18 ){
-                if(decimalimmediate % 2 == 0 || decimalimmediate == 0){immediate[length3] = '0';}
-                else{immediate[length3] = '1';}
-                decimalimmediate= decimalimmediate/2;
-                length3++;
-            }
-            immediate[length3] = '\0';
-            int middle3 = length3 /2;
-            char temp3;
-            for(int i=0 ; i< middle3; i++){
-                temp3 = immediate[i];
-                immediate[i]= immediate[length3-i-1];
-                immediate[length3-i-1] = temp3;
-            }
-            
-            //concatenate everything
-            strcat(instruction,opcode);
-            strcat(instruction,R1);
-            strcat(instruction,"00000");
-            strcat(instruction,immediate);
-            printf("Instruction: %s\n", instruction);
+            number1 = number1 << 23;
+            instruction = instruction | number1;
+            instruction = instruction | decimalimmediate;
         }else if(strcmp(s[0], "JMP") == 0){
             //convert from string to decimal
             int decimal = atoi(s[1]);
             //convert from decimal to binary
-            int length = 0;
-            while(length<28 ){
-                if(decimal % 2 == 0 || decimal == 0){address[length] = '0';}
-                else{address[length] = '1';}
-                decimal= decimal/2;
-                length++;
-            }
-            address[length] = '\0';
-            //reverse binary string
-            int middle = length /2;
-            char temp;
-            for(int i=0 ; i< middle; i++){
-                temp = address[i];
-                address[i]= address[length-i-1];
-                address[length-i-1] = temp;
-            }
-            //concatenate everything
-            strcat(instruction,opcode);
-            strcat(instruction,address);
+            instruction = instruction | decimal;
+            
         }
+        return instruction;
         
     }
 
@@ -734,7 +520,7 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 //tesing
 void main() {
 
-    instructionToBinary();
+    printf("instruction1:%i",instructionToBinary());
 
     //printf("%d \n" , atoi("29"));
     
