@@ -404,13 +404,13 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
 //parsing
     //1-import text file into a string array
-    char** readFile(int programNum){
+    char** readFile(){
         FILE *file;
         char line[100];
 
         // Open the file
         char fileName[64];
-        sprintf(fileName, "Program_%d.txt", programNum); //Concatenate the filename
+        sprintf(fileName, "testData.txt"); //Concatenate the filename
         printf("Opening file:%s\n", fileName);
         file = fopen(fileName, "r");
 
@@ -565,8 +565,11 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
 //tesing
 void main() {
-
-    printf("instruction1:%i /n",instructionToBinary("ADD R1 R2 R3"));
+    char **temp = readFile();
+    for(int i=0 ; i <12 ;i++){
+        printf("instruction: %s\n" , temp[i]);
+    }
+    
 
     //printf("%d \n" , atoi("29"));
     
