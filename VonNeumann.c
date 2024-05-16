@@ -11,12 +11,12 @@ int cycle = 0;
 int NumberofInstructions = 0;
 int wbFlag = 0;
 
-struct Queue* dec_q;
-struct InstQueue* ex_q;
-struct Queue* memrow_q;
-struct Queue* memop_q;
-struct Queue* wbi_q;
-struct Queue* wbop_q;
+struct Queue* dec_q; //to be decoded instruction queue
+struct InstQueue* ex_q; //to be executed instruction queue
+struct Queue* memrow_q; // memory access, address in memory
+struct Queue* memop_q; // memory access, result to put in memory
+struct Queue* wbi_q; // write back, destination
+struct Queue* wbop_q; // write back, result
 
 struct Memory{
     int rows[2048];
@@ -96,7 +96,16 @@ int dequeue(struct Queue* queue)
     queue->size = queue->size - 1;
     return item;
 }
-
+//removes end of queue
+int dequeueEnd(struct Queue* queue)
+{
+    if (isEmpty(queue))
+        return INT_MIN;
+    int item = queue->array[queue->rear];
+    queue->rear = (queue->rear - 1);
+    queue->size = queue->size - 1;
+    return item;
+}
 // Function to get front of queue
 int front(struct Queue* queue)
 {
@@ -160,7 +169,17 @@ struct decodedInstruction dequeueInst(struct InstQueue* queue)
     queue->size = queue->size - 1;
     return item;
 }
-
+//removes end of queue
+struct decodedInstruction dequeueInstEnd(struct InstQueue* queue)
+{
+    struct decodedInstruction emptyInstruction = {INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN};
+    if (isInstEmpty(queue))
+        return emptyInstruction;
+    struct decodedInstruction item = queue->array[queue->rear];
+    queue->rear = (queue->rear - 1);
+    queue->size = queue->size - 1;
+    return item;
+}
 // Function to get front of queue
 struct decodedInstruction frontInst(struct InstQueue* queue)
 {
@@ -171,6 +190,7 @@ struct decodedInstruction frontInst(struct InstQueue* queue)
 }
 #pragma endregion
 
+//kinda not used: remove
 void addToMemory(int value){
     memory.rows[NumberofInstructions] = value;
     NumberofInstructions++;
@@ -247,14 +267,15 @@ void decode(struct Queue* dec_q, struct InstQueue* ex_q){
     }
 }
 
-void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop_q, struct Queue* wbi_q, struct Queue* wbop_q){
+void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop_q, struct Queue* wbi_q, struct Queue* wbop_q){
     printf("cycle %d: executing instruction %d\n", cycle, getInst(frontInst(ex_q).instruction));
     
     if(cycle%2 == 1) {
         struct decodedInstruction instruction = dequeueInst(ex_q);
         // Add
         if (instruction.opcode == 0) {
-            int result = registers.GPR[instruction.r2] + registers.GPR[instruction.r3];
+            // -1 as if RS==5, we need to load R4 from GPR as it starts from R1, R0 is stored alone
+            int result = registers.GPR[instruction.r2-1] + registers.GPR[instruction.r3-1];
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -263,7 +284,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Subtract
         if (instruction.opcode == 1) {
-            int result = registers.GPR[instruction.r2] - registers.GPR[instruction.r3];
+            int result = registers.GPR[instruction.r2-1] - registers.GPR[instruction.r3-1];
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -272,7 +293,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Multiply
         if (instruction.opcode == 2) {
-            int result = registers.GPR[instruction.r2] * registers.GPR[instruction.r3];
+            int result = registers.GPR[instruction.r2-1] * registers.GPR[instruction.r3-1];
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -290,9 +311,12 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Jump If Equal
         if (instruction.opcode == 4) {
-            if (registers.GPR[instruction.r1] == registers.GPR[instruction.r2]) {
+            if (registers.GPR[instruction.r1-1] == registers.GPR[instruction.r2-1]) {
                 registers.pc = instruction.address;
             }
+            //remove instruction that was fetched and one that was decoded
+            dequeueEnd(dec_q);
+            dequeueInstEnd(ex_q);
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, -1);
@@ -301,7 +325,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // And
         if (instruction.opcode == 5) {
-            int result = registers.GPR[instruction.r2] & registers.GPR[instruction.r3];
+            int result = registers.GPR[instruction.r2-1] & registers.GPR[instruction.r3-1];
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -310,7 +334,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Exclusive Or Immediate
         if (instruction.opcode == 6) {
-            int result = registers.GPR[instruction.r2] ^ instruction.immediate;
+            int result = registers.GPR[instruction.r2-1] ^ instruction.immediate;
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -319,16 +343,19 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Jump
         if (instruction.opcode == 7) {
+            registers.pc = instruction.address; //was the last line in the "if condition" but i moved it up as first line
+            //remove instruction that was fetched and one that was decoded
+            dequeueEnd(dec_q);
+            dequeueInstEnd(ex_q);
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, -1);
             enqueue(wbop_q, -1);
-            registers.pc = instruction.address;
         }
 
         // Logical Shift Left
         if (instruction.opcode == 8) {
-            int result = registers.GPR[instruction.r2] << instruction.shamt;
+            int result = registers.GPR[instruction.r2-1] << instruction.shamt;
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -337,7 +364,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Logical Shift Right
         if (instruction.opcode == 9) {
-            int result = registers.GPR[instruction.r2] >> instruction.shamt;
+            int result = registers.GPR[instruction.r2-1] >> instruction.shamt;
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -346,7 +373,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Move to Register
         if (instruction.opcode == 10) {
-            int result = registers.GPR[instruction.r2];
+            int result = registers.GPR[instruction.r2-1];
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -355,7 +382,7 @@ void execute(struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop
 
         // Move to Memory
         if (instruction.opcode == 11) {
-            int result = registers.GPR[instruction.r1];
+            int result = registers.GPR[instruction.r1-1];
             enqueue(memrow_q, instruction.address);
             enqueue(memop_q, result);
             enqueue(wbi_q, -1);
@@ -403,7 +430,7 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
 
 //parsing: read text file of MIPS, convert to int instruction and store in memory
-    //1-import text file into a string array
+    //1-import text file into a string array: helper method
     char** readFile(){
         FILE *file;
         char line[100];
@@ -442,7 +469,7 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
 
         return lines;
     }
-    //2-turn each string instruction to binary integer
+    //2-turn each string instruction to binary integer : helper method
     int instructionToBinary(char* linePtr){
         char line[50];
         strcpy(line, linePtr);
@@ -621,14 +648,6 @@ void main() {
     
     
 
-    //printf("%d \n" , atoi("29"));
-    
-    /*char s1[50] = "hello ";
-    char s2[] = "world";
-    strcat(s1,s2);
-    printf("%s \n", s1);*/
-    //splitInstruction();
-
     /*dec_q = createQueue(16);
     ex_q = createInstQueue(16);
     memrow_q = createQueue(16);
@@ -653,7 +672,7 @@ void main() {
             memoryStore(memrow_q, memop_q, wbi_q, wbop_q);
         }
         if(!isInstEmpty(ex_q)) {
-            execute(ex_q, memrow_q, memop_q, wbi_q, wbop_q);
+            execute(dec_q,ex_q, memrow_q, memop_q, wbi_q, wbop_q);
         }
         if(!isEmpty(dec_q)) {
             decode(dec_q, ex_q);
