@@ -5,11 +5,15 @@
 
 
 
-int memoryLoad(int);
+int dataMemoryLoad(int);
+int instructionsMemoryLoad(int);
 
-int cycle = 0;
+int cycle = 1;
 int NumberofInstructions = 0;
 int wbFlag = 0;
+int length = 0; //number of instructions
+int memOriginalInstruction = 0;
+int wbOriginalInstruction = 0;
 
 struct Queue* dec_q; //to be decoded instruction queue
 struct InstQueue* ex_q; //to be executed instruction queue
@@ -96,6 +100,7 @@ int dequeue(struct Queue* queue)
     queue->size = queue->size - 1;
     return item;
 }
+
 //removes end of queue
 int dequeueEnd(struct Queue* queue)
 {
@@ -106,6 +111,7 @@ int dequeueEnd(struct Queue* queue)
     queue->size = queue->size - 1;
     return item;
 }
+
 // Function to get front of queue
 int front(struct Queue* queue)
 {
@@ -175,9 +181,9 @@ struct decodedInstruction dequeueInstEnd(struct InstQueue* queue)
     struct decodedInstruction emptyInstruction = {INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN, INT_MIN};
     if (isInstEmpty(queue))
         return emptyInstruction;
-    struct decodedInstruction item = queue->array[queue->rear];
     queue->rear = (queue->rear - 1);
     queue->size = queue->size - 1;
+    struct decodedInstruction item = queue->array[queue->rear];
     return item;
 }
 // Function to get front of queue
@@ -216,66 +222,125 @@ int getInst(int i) {
 
 
 
+void decToBin(int num){
+    /*int num2 = num;
+    num = abs(num);
+    char binary[256];
+    int length = 0;
+    do{
+        if( num%2 == 0) binary[length] = '0';
+        else binary[length] = '1';
+        num/=2;
+        length++;
+    }while(length<31);
+    if(num2<0){
+        binary[length+1] = '1';
+    }
+    else{
+        binary[length+1] = '0';
+    }
+    binary[length] = '\0';
+    int middle = length/2;
+    char temp;
+    for(int i =0; i< middle;i++){
+        temp = binary[i];
+        binary[i] = binary[length - i - 1];
+        binary[length - i - 1] = temp;
+    }
+    printf("%s" , binary);*/
+    char binary[33]; // Array to store the binary representation + null terminator
+    int length = 32; // Fixed length for 32-bit representation
 
+    // Handle the two's complement representation
+    for (int i = length - 1; i >= 0; i--) {
+        binary[i] = (num & 1) ? '1' : '0';
+        num >>= 1;
+    }
+    binary[length] = '\0'; // Null-terminate the string
+
+    printf("%s", binary);
+}
 //fetch decode excute cycle
 
 void fetch(struct Queue* dec_q){
-    int instruction = memoryLoad(registers.pc);
+    int instruction = instructionsMemoryLoad(registers.pc);
     if(instruction != 0) {
         enqueue(dec_q, instruction);
+        printf("cycle: %d, pc: %d, fetching instruction %d  ", cycle , registers.pc , instruction);
+        decToBin(instruction);
+        printf("\n");
         registers.pc++;
-        printf("cycle %d: fetching instruction %d\n", cycle, getInst(instruction));
     }
 }
 
 void decode(struct Queue* dec_q, struct InstQueue* ex_q){
-    printf("cycle %d: decoding instruction %d\n", cycle, getInst(front(dec_q)));
-
+    
+    printf("cycle: %d, decoding instruction %d ", cycle, front(dec_q));
+    decToBin(front(dec_q));
     if(cycle%2 == 1) {
-        int temp;
         struct decodedInstruction decodedInstruction;
         int instruction = dequeue(dec_q);
-
+        unsigned int temp = (unsigned int)instruction;
+        
+        
         temp = instruction & 0b11110000000000000000000000000000;
         temp = temp >> 28;
-        decodedInstruction.opcode = temp;
+        decodedInstruction.opcode = (int)temp;
+        printf(", opcode:%d, ", decodedInstruction.opcode);
 
         temp = instruction & 0b00001111100000000000000000000000;
         temp = temp >> 23;
         decodedInstruction.r1 = temp;
+        printf("R1:%d, ", decodedInstruction.r1);
 
         temp = instruction & 0b00000000011111000000000000000000;
         temp = temp >> 18;
         decodedInstruction.r2 = temp;
+        printf("R2:%d, ", decodedInstruction.r2);
 
-        temp = instruction & 0b00000000000000111111000000000000;
-        temp = temp >> 12;
+        temp = instruction & 0b00000000000000111110000000000000;
+        temp = temp >> 13;
         decodedInstruction.r3 = temp;
+        printf("R3:%d, ", decodedInstruction.r3);
 
-        temp = instruction & 0b00000000000000000000111111111111;
+        temp = instruction & 0b00000000000000000001111111111111;
         decodedInstruction.shamt = temp;
+        printf("Shamt:%d, ", decodedInstruction.shamt);
 
         temp = instruction & 0b00000000000000111111111111111111;
         decodedInstruction.immediate = temp;
+        printf("immediate:%d, ", temp);
 
         temp = instruction & 0b00001111111111111111111111111111;
         decodedInstruction.address = temp;
+        printf("address:%d ", temp);
 
         decodedInstruction.instruction = instruction;
 
         enqueueInst(ex_q, decodedInstruction);
+        
+
     }
+    printf("\n");
 }
 
 void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q, struct Queue* memop_q, struct Queue* wbi_q, struct Queue* wbop_q){
-    printf("cycle %d: executing instruction %d\n", cycle, getInst(frontInst(ex_q).instruction));
-    
+    printf("cycle: %d, pc: %d, executing instruction %d ", cycle,registers.pc, frontInst(ex_q).instruction);
+    decToBin(frontInst(ex_q).instruction);
+    struct decodedInstruction instructiontemp = frontInst(ex_q);
+    printf(", opcode: %d, R1: %d, R2: %d, R3: %d, shamt: %d, immediate: %d, address: %d ", instructiontemp.opcode,
+            instructiontemp.r1, instructiontemp.r2, instructiontemp.r3, instructiontemp.shamt , instructiontemp.immediate, instructiontemp.address);
+    printf("\n");
+    memOriginalInstruction = frontInst(ex_q).instruction;
+
     if(cycle%2 == 1) {
         struct decodedInstruction instruction = dequeueInst(ex_q);
         // Add
         if (instruction.opcode == 0) {
             // -1 as if RS==5, we need to load R4 from GPR as it starts from R1, R0 is stored alone
-            int result = registers.GPR[instruction.r2-1] + registers.GPR[instruction.r3-1];
+            int result = registers.GPR[instruction.r2 -1] + registers.GPR[instruction.r3 -1];
+            printf("reg values:%d %d ",instruction.r2 , instruction.r3);
+            printf("addition: %d", result);
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -312,11 +377,18 @@ void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q,
         // Jump If Equal
         if (instruction.opcode == 4) {
             if (registers.GPR[instruction.r1-1] == registers.GPR[instruction.r2-1]) {
-                registers.pc = instruction.address;
-            }
-            //remove instruction that was fetched and one that was decoded
-            dequeueEnd(dec_q);
-            dequeueInstEnd(ex_q);
+                if(registers.pc + instruction.immediate < 0){
+                    registers.pc = 0;
+                }else{
+                    registers.pc += (instruction.immediate-1);
+                }
+                //remove instruction that was fetched and one that was decoded
+                if(instruction.immediate>1){
+                    dequeueEnd(dec_q);
+                }
+                dequeueInstEnd(ex_q);
+                }
+            
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, -1);
@@ -343,10 +415,22 @@ void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q,
 
         // Jump
         if (instruction.opcode == 7) {
-            registers.pc = instruction.address; //was the last line in the "if condition" but i moved it up as first line
+            int temp = registers.pc && 0b11110000000000000000000000000000;
+            registers.pc = temp | instruction.address; 
+            printf("PC VALUE BITCHES %d" , registers.pc);
+            //was the last line in the "if condition" but i moved it up as first line
             //remove instruction that was fetched and one that was decoded
-            dequeueEnd(dec_q);
-            dequeueInstEnd(ex_q);
+            if(instruction.immediate%2 == 0){
+                registers.pc -=1;
+            }
+            if(instruction.immediate == 2){
+                dequeueEnd(dec_q);
+            }
+            else if (instruction.immediate != 1){
+                dequeueEnd(dec_q);
+                dequeueInstEnd(ex_q);
+            }
+            
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, -1);
@@ -373,7 +457,10 @@ void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q,
 
         // Move to Register
         if (instruction.opcode == 10) {
-            int result = registers.GPR[instruction.r2-1];
+            int result =0;
+            if(registers.GPR[instruction.r2-1] + instruction.immediate > 0){
+                result = memory.rows[1024 + registers.GPR[instruction.r2-1] + instruction.immediate];
+            }
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -382,8 +469,12 @@ void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q,
 
         // Move to Memory
         if (instruction.opcode == 11) {
+            int address = registers.GPR[instruction.r2-1] + instruction.immediate;
+            if(address<0){
+                address = 0;
+            }
             int result = registers.GPR[instruction.r1-1];
-            enqueue(memrow_q, instruction.address);
+            enqueue(memrow_q, address);
             enqueue(memop_q, result);
             enqueue(wbi_q, -1);
             enqueue(wbop_q, -1);
@@ -391,18 +482,26 @@ void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q,
     }
 }
 
-int memoryLoad(int rowIndex){
+int dataMemoryLoad(int rowIndex){
+    //returns value in this address
+    return memory.rows[1024 + rowIndex];
+}
+
+int instructionsMemoryLoad(int rowIndex){
     //returns value in this address
     return memory.rows[rowIndex];
 }
 
-void memoryStore(struct Queue* memrow_q, struct Queue* memop_q, struct Queue* wbi_q, struct Queue* wbop_q){
+void memoryStore(int originalInstruction,struct Queue* memrow_q, struct Queue* memop_q, struct Queue* wbi_q, struct Queue* wbop_q){
     //stores operand in rowIndex
-    printf("cycle %d: memory store\n", cycle);
+    printf("cycle: %i, address: %d, value: %d, memory store instruction: ",cycle, front(memrow_q),front(memop_q));
+    decToBin(originalInstruction);
+    printf("\n");
+    wbOriginalInstruction = memOriginalInstruction;
 
     if(!isEmpty(memop_q)) {
         if(front(memop_q) != -1) {
-            memory.rows[dequeue(memrow_q)] = dequeue(memop_q);
+            memory.rows[1024 + dequeue(memrow_q)] = dequeue(memop_q);
         }
         else {
             dequeue(memrow_q);
@@ -410,15 +509,17 @@ void memoryStore(struct Queue* memrow_q, struct Queue* memop_q, struct Queue* wb
         }
     }
     if(front(wbop_q) == -1)
-        wbFlag = 2;
+        wbFlag = 2; // 2= false
     else
-        wbFlag = 1;
+        wbFlag = 1; // 1= true
 }
 
-void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
+void writeBack(int originalInstruction,struct Queue* wbi_q, struct Queue* wbop_q){
     //write result(operand) back to GPR defined by the GPRIndex
-    printf("cycle %d: writeback\n", cycle);
-    
+    printf("cycle:%d, address:%d, value:%d, writeback instruction: ", cycle, front(wbi_q), front(wbop_q));
+    decToBin(originalInstruction);
+    printf("\n");
+
     int GPR = dequeue(wbi_q);
     int operand = dequeue(wbop_q);
     if(wbFlag == 2 || GPR == 0)
@@ -582,26 +683,80 @@ void writeBack(struct Queue* wbi_q, struct Queue* wbop_q){
     void initializeMemory(){
         //read file
         char **file = readFile(); //change temp value
-        int length = 0;
         while (file[length] != NULL) {
             length++;
         }
         //convert instruction to binary and store in memory
         for(int i =0; i< length; i++){
-            //printf("Line: %s \n" , file[i]);
             int instruction = instructionToBinary(file[i]);
             memory.rows[i] = instruction;
-            //printf("instruction: %i \n" , memory.rows[i]);
+            printf("Line: %s" , file[i]);
+            printf("instruction: %i \n" , memory.rows[i]);
+            printf("\n" );
             //printf("instruction: %i \n" , instruction);
         }
 
     }
 
 
+void start(){
+    initializeMemory();
+
+    dec_q = createQueue(length +1);
+    ex_q = createInstQueue(length +1);
+    memrow_q = createQueue(length +1);
+    memop_q = createQueue(length +1);
+    wbi_q = createQueue(length +1);
+    wbop_q = createQueue(length +1);
+    
+
+    while((memory.rows[registers.pc]!=0 &&  registers.pc < 1023 )|| 
+    !isEmpty(dec_q) || !isInstEmpty(ex_q) || !isEmpty(memrow_q) || !isEmpty(memop_q) || !isEmpty(wbi_q) || !isEmpty(wbop_q)) {
+    //while(cycle <= 19){
+        printf("Cycle: %i \n", cycle);
+        
+        if(wbFlag != 0) {
+            wbFlag = 0;
+            writeBack(wbOriginalInstruction,wbi_q, wbop_q);
+        }
+        if(cycle%2 == 0 && !isEmpty(memop_q)) {
+            memoryStore(memOriginalInstruction,memrow_q, memop_q, wbi_q, wbop_q);
+        }
+        if(!isInstEmpty(ex_q)) {
+            execute(dec_q,ex_q, memrow_q, memop_q, wbi_q, wbop_q);
+        }
+        if(!isEmpty(dec_q)) {
+            decode(dec_q, ex_q);
+        }
+        if(cycle%2 == 1) {
+            fetch(dec_q);
+        }
+        cycle++;
+
+        printf("\n");
+    }
+
+    printf("Contents after Last clock cycle: \n \n");
+    printf("PC:%d \n" , registers.pc);
+    printf("R0:%d \n" , registers.r0);
+    for(int i = 0; i< 32 ; i ++){
+        printf("R%d:%d \n" ,i+1, registers.GPR[i]);
+    }
+    /*for(int i = 0; i<2048;i++){
+        printf("memory row %d:%d, " , i+1, memory.rows[i]);
+    }*/
+}
 //tesing
 void main() {
+    start();
+    /*memory.rows[0] = 0b00000000100100001010000000000000;
+    memory.rows[1] = 0b00000001000100001010000000000000;
+    memory.rows[2] = 0b00000001100100001010000000000000;
+    memory.rows[3] = 0b00000010000100001010000000000000;
+    memory.rows[4] = 0b00000010100100001010000000000000;
+    memory.rows[5] = 0b00000011000100001010000000000000;
+    memory.rows[6] = 0b00000011100100001010000000000000;*/
 
-    initializeMemory();
     /*
     Expected output:
 
@@ -645,41 +800,36 @@ void main() {
     instruction: -1203634176 10111000010000100000000000000000
 
     */
+    /*
+    1)Line: MOVI R2 2
+    instruction: 822083586 
+    0011 00010 00000 000000000000000010
+
+    2)Line: MOVI R3 3
+    instruction: 830472195 
+    0011 00011 00000 000000000000000011
+
+    3)Line: MOVI R5 10
+    instruction: 847249418 
+    0011 00101 00000 000000000000001010
+
+    4)Line: MOVI R6 5
+    instruction: 855638021 
+    0011 00110 00000 000000000000000101
+
+    5)Line: ADD R1 R2 R3
+    instruction: 8937472 
+    0000 00001 00010 00011 0000000000000
+
+    6)Line: SUB R4 R5 R6
+    instruction: 303349760 
+    0001 00100 00101 00110 0000000000000
+
+    7)Line: JMP 134217728
+    instruction: 2013265920 
+    0111 1000000000000000000000000000
+    */
     
+
     
-
-    /*dec_q = createQueue(16);
-    ex_q = createInstQueue(16);
-    memrow_q = createQueue(16);
-    memop_q = createQueue(16);
-    wbi_q = createQueue(16);
-    wbop_q = createQueue(16);
-
-    memory.rows[0] = 0b00000000100100001010000000000000;
-    memory.rows[1] = 0b00000001000100001010000000000000;
-    memory.rows[2] = 0b00000001100100001010000000000000;
-    memory.rows[3] = 0b00000010000100001010000000000000;
-    memory.rows[4] = 0b00000010100100001010000000000000;
-    memory.rows[5] = 0b00000011000100001010000000000000;
-    memory.rows[6] = 0b00000011100100001010000000000000;
-
-    while(cycle <= 19) {
-        if(wbFlag != 0) {
-            wbFlag = 0;
-            writeBack(wbi_q, wbop_q);
-        }
-        if(cycle%2 == 0 && !isEmpty(memop_q)) {
-            memoryStore(memrow_q, memop_q, wbi_q, wbop_q);
-        }
-        if(!isInstEmpty(ex_q)) {
-            execute(dec_q,ex_q, memrow_q, memop_q, wbi_q, wbop_q);
-        }
-        if(!isEmpty(dec_q)) {
-            decode(dec_q, ex_q);
-        }
-        if(cycle%2 == 1) {
-            fetch(dec_q);
-        }
-        cycle++;
-    }*/
 }
