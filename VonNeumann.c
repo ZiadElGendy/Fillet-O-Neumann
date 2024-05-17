@@ -742,9 +742,9 @@ void start(){
     for(int i = 0; i< 32 ; i ++){
         printf("R%d:%d \n" ,i+1, registers.GPR[i]);
     }
-    /*for(int i = 0; i<2048;i++){
+    for(int i = 0; i<2048;i++){
         printf("memory row %d:%d, " , i+1, memory.rows[i]);
-    }*/
+    }
 }
 //tesing
 void main() {
