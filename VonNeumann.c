@@ -9,9 +9,7 @@ int dataMemoryLoad(int);
 int instructionsMemoryLoad(int);
 
 int cycle = 1;
-int NumberofInstructions = 0;
 int wbFlag = 0;
-int length = 0; //number of instructions
 int memOriginalInstruction = 0;
 int wbOriginalInstruction = 0;
 
@@ -196,29 +194,6 @@ struct decodedInstruction frontInst(struct InstQueue* queue)
 }
 #pragma endregion
 
-//kinda not used: remove
-void addToMemory(int value){
-    memory.rows[NumberofInstructions] = value;
-    NumberofInstructions++;
-}
-
-int getInst(int i) {
-    if(i == 9478144)
-        return 1;
-    if(i == 17866752)
-        return 2;
-    if(i == 26255360)
-        return 3;
-    if(i == 34643968)
-        return 4;
-    if(i == 43032576)
-        return 5;
-    if(i == 51421184)
-        return 6;
-    if(i == 59809792)
-        return 7;
-    return -1;
-}
 
 
 
@@ -261,6 +236,8 @@ void decToBin(int num){
     printf("%s", binary);
 }
 //fetch decode excute cycle
+
+
 
 void fetch(struct Queue* dec_q){
     int instruction = instructionsMemoryLoad(registers.pc);
@@ -339,8 +316,6 @@ void execute(struct Queue* dec_q,struct InstQueue* ex_q, struct Queue* memrow_q,
         if (instruction.opcode == 0) {
             // -1 as if RS==5, we need to load R4 from GPR as it starts from R1, R0 is stored alone
             int result = registers.GPR[instruction.r2 -1] + registers.GPR[instruction.r3 -1];
-            printf("reg values:%d %d ",instruction.r2 , instruction.r3);
-            printf("addition: %d", result);
             enqueue(memrow_q, -1);
             enqueue(memop_q, -1);
             enqueue(wbi_q, instruction.r1);
@@ -682,6 +657,7 @@ void writeBack(int originalInstruction,struct Queue* wbi_q, struct Queue* wbop_q
     //3- add to memory
     void initializeMemory(){
         //read file
+        int length = 0; //number of instructions
         char **file = readFile(); //change temp value
         while (file[length] != NULL) {
             length++;
@@ -702,12 +678,12 @@ void writeBack(int originalInstruction,struct Queue* wbi_q, struct Queue* wbop_q
 void start(){
     initializeMemory();
 
-    dec_q = createQueue(length +1);
-    ex_q = createInstQueue(length +1);
-    memrow_q = createQueue(length +1);
-    memop_q = createQueue(length +1);
-    wbi_q = createQueue(length +1);
-    wbop_q = createQueue(length +1);
+    dec_q = createQueue(100);
+    ex_q = createInstQueue(100);
+    memrow_q = createQueue(100);
+    memop_q = createQueue(100);
+    wbi_q = createQueue(100);
+    wbop_q = createQueue(100);
     
 
     while((memory.rows[registers.pc]!=0 &&  registers.pc < 1023 )|| 
